@@ -33,7 +33,7 @@
 
 
 std::unordered_map<std::string, Colour> getcolourMap(){
-	std::cout << "0"<< std::endl;
+	//std::cout << "0"<< std::endl;
 	std::ifstream file ("cornell-box.mtl");
 
 	std::unordered_map<std::string, Colour> colourMap;
@@ -107,7 +107,7 @@ std::unordered_map<std::string, Colour> getcolourMap(){
 
 
 std::vector<ModelTriangle> readOBJFile(){
-	std::cout << "1"<< std::endl;
+	//std::cout << "1"<< std::endl;
 	std::ifstream file ("cornell-box.obj");
 
 	std::vector<glm::vec3> vs;
@@ -195,7 +195,7 @@ std::vector<ModelTriangle> readOBJFile(){
 
 
 std::vector<float> interpolateSingleFloat(float start, float end, int steps){
-	std::cout << "2"<< std::endl;
+	//std::cout << "2"<< std::endl;
 	std::vector<float> list;
 
 	for(int i = 0; i<steps; i++){
@@ -215,7 +215,7 @@ std::vector<float> interpolateSingleFloat(float start, float end, int steps){
 
 
 void drawLine(DrawingWindow &window, CanvasPoint From, CanvasPoint To, Colour c){
-	std::cout << "3"<< std::endl;
+	//std::cout << "3"<< std::endl;
 	float xDif = To.x-From.x;
 
 	float yDif = To.y-From.y;
@@ -249,7 +249,7 @@ void drawLine(DrawingWindow &window, CanvasPoint From, CanvasPoint To, Colour c)
 
 
 void drawStrokedTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c){
-	std::cout << "4"<< std::endl;
+	//std::cout << "4"<< std::endl;
 	drawLine(window, tri.v0(), tri.v1(), c);
 
 	drawLine(window, tri.v0(), tri.v2(), c);
@@ -267,7 +267,7 @@ void drawStrokedTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c){
 
 
 int xyToTexture1D(int x, int y, TextureMap t){
-	std::cout << "5"<< std::endl;
+	//std::cout << "5"<< std::endl;
 	return y*t.width +x;
 
 }
@@ -279,7 +279,7 @@ int xyToTexture1D(int x, int y, TextureMap t){
 
 
 void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,float depthArray[WIDTH][HEIGHT]){
-	std::cout << "6"<< std::endl;
+	//std::cout << "6"<< std::endl;
 
 
 	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
@@ -339,7 +339,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,floa
 	std::vector<float> xs01 = interpolateSingleFloat(tri.v0().x, tri.v1().x, yDif);
 
 	std::vector<float> xs01Ds = interpolateSingleFloat(tri.v0().depth, tri.v1().depth, yDif);
-	std::cout<<"2-2"<<std::endl;
+	//std::cout<<"2-2"<<std::endl;
 	for(int y = 0; y<yDif; y++){
 
 		if(xs0CV.at(y)>xs01.at(y)){
@@ -347,21 +347,21 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,floa
 			std::swap(xs0CV, xs01);
 
 		}
-		std::cout<<"2-1"<<std::endl;
+		//std::cout<<"2-1"<<std::endl;
 		std::vector<float> across = interpolateSingleFloat(xs0CV.at(y), xs01.at(y), abs(xs01.at(y)-xs0CV.at(y))+2);
-		std::cout<<"2-0"<<std::endl;
+		//std::cout<<"2-0"<<std::endl;
 		std::vector<float> acrossDs = interpolateSingleFloat(xs0CVDs.at(y), xs01Ds.at(y), abs(xs01.at(y)-xs0CV.at(y))+2);
 
-		std::cout<<"19"<<std::endl;
+		//std::cout<<"19"<<std::endl;
 		for(int i = 0; i<across.size();i++){
 
 			//std::cout<<1/acrossDs.at(i)<<std::endl;
-			std::cout<<"16"<<std::endl;
-			if ((int)across.at(i) >= HEIGHT || (int)round(tri.v0().y+y)  >= WIDTH){}
+			//std::cout<<"16"<<std::endl;
+			if ((int)across.at(i) >= HEIGHT || (int)round(tri.v0().y+y)  >= WIDTH || (int)across.at(i) < 0 || (int)round(tri.v0().y+y) < 0){}
 			else if(1/acrossDs.at(i) > depthArray[(int)across.at(i)][(int)round(tri.v0().y+y)]){
-				std::cout<<"17"<<std::endl;
+				//std::cout<<"17"<<std::endl;
 				depthArray[(int)across.at(i)][(int)round(tri.v0().y+y)] = 1/acrossDs.at(i);
-				std::cout<<"18"<<std::endl;
+				//std::cout<<"18"<<std::endl;
 				window.setPixelColour(floor(across.at(i)), round(tri.v0().y+y), colour);
 
 			}
@@ -369,31 +369,31 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,floa
 		}
 
 	}
-	std::cout<<"2-3"<<std::endl;
+	//std::cout<<"2-3"<<std::endl;
 	//fill line between points cv and v1
 
 	std::vector<float> line = interpolateSingleFloat(CV.x, tri.v1().x, abs(tri.v1().x-CV.x)+2);
 
 	std::vector<float> lineDs = interpolateSingleFloat(CV.depth, tri.v1().depth, abs(tri.v1().x-CV.x)+2);
-std::cout<<"2-4"<<std::endl;
+//std::cout<<"2-4"<<std::endl;
 	for(int i = 0; i<line.size();i++){
-		std::cout<<"2-6"<<std::endl;
-		std::cout<<1/lineDs.at(i)<<std::endl;
-		std::cout<<(int)line.at(i)<<std::endl;
-		std::cout<<(int)round(tri.v1().y)<<std::endl;
-		if ((int)line.at(i) >= WIDTH || ((int)round(tri.v1().y) >=  HEIGHT)){
+		//std::cout<<"2-6"<<std::endl;
+		//std::cout<<1/lineDs.at(i)<<std::endl;
+		//std::cout<<(int)line.at(i)<<std::endl;
+		//std::cout<<(int)round(tri.v1().y)<<std::endl;
+		if ((int)line.at(i) >= WIDTH || ((int)round(tri.v1().y) >=  HEIGHT || (int)line.at(i) < 0 || (int)round(tri.v1().y) < 0)){
 
 		}
 		else if(1/lineDs.at(i) > depthArray[(int)line.at(i)][(int)round(tri.v1().y)]){
-			std::cout<<"2-7"<<std::endl;
+			//std::cout<<"2-7"<<std::endl;
 			window.setPixelColour(floor(line.at(i)), CV.y, colour);
-			std::cout<<"2-8"<<std::endl;
+			//std::cout<<"2-8"<<std::endl;
 			window.setPixelColour(floor(line.at(i)), CV.y-1, colour);
 
 		}
 
 	}
-	std::cout<<"2-5"<<std::endl;
+	//std::cout<<"2-5"<<std::endl;
 
 
 
@@ -411,7 +411,7 @@ std::cout<<"2-4"<<std::endl;
 	std::vector<float> xs12Ds = interpolateSingleFloat(tri.v1().depth, tri.v2().depth, yDif2);
 
 	for(int y = 0; y<yDif2; y++){
-		std::cout<<"3-3"<<std::endl;
+		//std::cout<<"3-3"<<std::endl;
 
 		if(xsCV2.at(y)>xs12.at(y)){
 
@@ -425,31 +425,31 @@ std::cout<<"2-4"<<std::endl;
 
 		for(int i = 0; i<across.size();i++){
 
-			std::cout<<"2-9"<<std::endl;
+			//std::cout<<"2-9"<<std::endl;
 			//std::cout<<acrossDs.size()<<std::endl;
 			//std::cout<<across.size()<<std::endl;
 			//std::cout<<i<<std::endl;
 			//std::cout<<acrossDs.at(i)<<std::endl;
 			//std::cout<<(int)across.at(i)<<std::endl;
 			//std::cout<<(int)round(tri.v1().y+y)<<std::endl;
-			if (     (int)across.at(i) >= HEIGHT || ( (int) round(tri.v1().y+y) >=  WIDTH) ){
-				std::cout<<"3-2"<<std::endl;
+			if ((int)across.at(i) >= HEIGHT || ( (int) round(tri.v1().y+y) >=  WIDTH || (int)across.at(i) < 0 || (int)round(tri.v1().y+y) < 0) ){
+				//std::cout<<"3-2"<<std::endl;
 			}
 			else if(1/acrossDs.at(i) > depthArray[(int)across.at(i)][(int)round(tri.v1().y+y)]){
-				std::cout<<"3-0"<<std::endl;
+				//std::cout<<"3-0"<<std::endl;
 				depthArray[(int)across.at(i)][(int)round(tri.v1().y+y)] = 1/acrossDs.at(i);
-				std::cout<<"3-1"<<std::endl;
-				std::cout<<CV.y+y<<std::endl;
-				std::cout<<across.at(i)<<std::endl;
+				//std::cout<<"3-1"<<std::endl;
+				//std::cout<<CV.y+y<<std::endl;
+				//std::cout<<across.at(i)<<std::endl;
 				window.setPixelColour((int) floor(across.at(i)), round(CV.y+y), colour);
-				std::cout<<"4-6"<<std::endl;
+				//std::cout<<"4-6"<<std::endl;
 			}
 
 		}
-		std::cout<<"3-4"<<std::endl;
+		//std::cout<<"3-4"<<std::endl;
 
 	}
-	std::cout<<"3-5"<<std::endl;
+	//std::cout<<"3-5"<<std::endl;
 
 
 
@@ -469,7 +469,7 @@ std::cout<<"2-4"<<std::endl;
 
 
 std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 start, glm::vec3 end, int steps){
-	std::cout << "7"<< std::endl;
+	//std::cout << "7"<< std::endl;
 	std::vector<glm::vec3> list;
 
 	for(int i = 0; i<steps; i++){
@@ -497,7 +497,7 @@ std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 start, glm::vec3 
 }
 
 void modifyCameraRotation (glm::vec3 &initalCamera,glm::mat3 toRotate){
-	std::cout << "8"<< std::endl;
+	//std::cout << "8"<< std::endl;
 	initalCamera = initalCamera * toRotate;
 }
 
@@ -505,7 +505,7 @@ void modifyCameraRotation (glm::vec3 &initalCamera,glm::mat3 toRotate){
 
 
 void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
-	std::cout << "9"<< std::endl;
+	//std::cout << "9"<< std::endl;
 	initalCamera.x = initalCamera.x + toAdd.x;
 	initalCamera.y = initalCamera.y + toAdd.y;
 	initalCamera.z = initalCamera.z + toAdd.z;
@@ -515,7 +515,7 @@ void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
 ////////////////////////////////////////////////////////////////////////////////
 
 void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera){
-	std::cout << "10"<< std::endl;
+	//std::cout << "10"<< std::endl;
 
 	float focal = 2.5;
 
@@ -544,12 +544,12 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 
 	for(ModelTriangle mt : vs){
-		std::cout<<"3-7"<<std::endl;
+		//std::cout<<"3-7"<<std::endl;
 
 		for(int i = 0; i<3;i++){
 
 
-			std::cout<<"3-8"<<std::endl;
+			//std::cout<<"3-8"<<std::endl;
 			glm::vec3 v = mt.vertices[i];
 
 					//calculate u
@@ -567,19 +567,19 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 
 		uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
-		std::cout<<"5-1"<<std::endl;
+		//std::cout<<"5-1"<<std::endl;
 
 		window.setPixelColour(x, y, colour);
 
 
 		}
-		std::cout<<"4-0"<<std::endl;
+		//std::cout<<"4-0"<<std::endl;
 
 		//out.push_back(temp);
 
-		std::cout<<"4-1"<<std::endl;
+		//std::cout<<"4-1"<<std::endl;
 		float depthArray[WIDTH][HEIGHT];
-		std::cout<<"4-2"<<std::endl;
+		//std::cout<<"4-2"<<std::endl;
 		for (int y =0;y<WIDTH;y++){
 			for(int x =0;x<HEIGHT;x++){
 				//std::cout<<"y" <<std::endl;
@@ -591,7 +591,7 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 
 
-		std::cout<<"4-3"<<std::endl;
+		//std::cout<<"4-3"<<std::endl;
 		drawFilledTriangle(window, temp, mt.colour,depthArray);
 
 		//std::cout<<mt.colour<<std::endl;
@@ -600,7 +600,7 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 	}
 
-	std::cout<<"3-6"<<std::endl;
+	//std::cout<<"3-6"<<std::endl;
 
 	//return out;
 
@@ -619,7 +619,7 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 
 void draw(DrawingWindow &window) {
-	std::cout << "12"<< std::endl;
+	//std::cout << "12"<< std::endl;
 	window.clearPixels();
 
 	//std::vector<float> greyscale;
@@ -675,7 +675,7 @@ void draw(DrawingWindow &window) {
 
 
 void update(DrawingWindow &window) {
-	std::cout << "13"<< std::endl;
+	//std::cout << "13"<< std::endl;
 	// Function for performing animation (shifting artifacts or moving the camera)
 
 }
@@ -687,7 +687,7 @@ void update(DrawingWindow &window) {
 
 
 void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera ) {
-	std::cout << "14"<< std::endl;
+	//std::cout << "14"<< std::endl;
 	if (event.type == SDL_KEYDOWN) {
 
 		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
@@ -725,7 +725,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera 
 
 
 int main(int argc, char *argv[]) {
-	std::cout << "15"<< std::endl;
+	//std::cout << "15"<< std::endl;
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 
 	SDL_Event event;
@@ -744,7 +744,7 @@ int main(int argc, char *argv[]) {
 
 	for(size_t i=0; i<result.size(); i++) std::cout << result[i].z << " ";
 
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
 
 
@@ -758,9 +758,9 @@ int main(int argc, char *argv[]) {
 	);
 	//modifyCameraPosition(initalCamera,glm::vec3(0.1, 0.1, -0.1));
 	//modifyCameraRotation(initalCamera,rotation);
-	std::cout << initalCamera.x<< std::endl;
-	std::cout << initalCamera.y<< std::endl;
-	std::cout << initalCamera.z<< std::endl;
+	//std::cout << initalCamera.x<< std::endl;
+	//std::cout << initalCamera.y<< std::endl;
+	//std::cout << initalCamera.z<< std::endl;
 	while (true) {
 
 		// We MUST poll for events - otherwise the window will freeze !
