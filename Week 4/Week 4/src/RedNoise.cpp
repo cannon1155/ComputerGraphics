@@ -21,6 +21,8 @@
 #include <ModelTriangle.h>
 
 #include <unordered_map>
+#include <cmath>
+//#include <smath>
 
 #define WIDTH 600
 
@@ -260,11 +262,7 @@ void drawStrokedTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c){
 
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
-
-
 
 int xyToTexture1D(int x, int y, TextureMap t){
 	//std::cout << "5"<< std::endl;
@@ -272,25 +270,13 @@ int xyToTexture1D(int x, int y, TextureMap t){
 
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 
-
-
-void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,float depthArray[WIDTH][HEIGHT]){
+void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,float (&depthArray)[WIDTH][HEIGHT]){
 	//std::cout << "6"<< std::endl;
 
 
 	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
-
-
-
-
-
-
-
-
 
 	if(tri.v2().y<tri.v1().y){
 
@@ -365,9 +351,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,floa
 				window.setPixelColour(floor(across.at(i)), round(tri.v0().y+y), colour);
 
 			}
-
 		}
-
 	}
 	//std::cout<<"2-3"<<std::endl;
 	//fill line between points cv and v1
@@ -377,15 +361,12 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,floa
 	std::vector<float> lineDs = interpolateSingleFloat(CV.depth, tri.v1().depth, abs(tri.v1().x-CV.x)+2);
 //std::cout<<"2-4"<<std::endl;
 	for(int i = 0; i<line.size();i++){
-		//std::cout<<"2-6"<<std::endl;
-		//std::cout<<1/lineDs.at(i)<<std::endl;
-		//std::cout<<(int)line.at(i)<<std::endl;
-		//std::cout<<(int)round(tri.v1().y)<<std::endl;
 		if ((int)line.at(i) >= WIDTH || ((int)round(tri.v1().y) >=  HEIGHT || (int)line.at(i) < 0 || (int)round(tri.v1().y) < 0)){
 
 		}
 		else if(1/lineDs.at(i) > depthArray[(int)line.at(i)][(int)round(tri.v1().y)]){
 			//std::cout<<"2-7"<<std::endl;
+		//	depthArray[(int)line.at(i)][(int)round(tri.v1().y)] = 1/lineDs.at(i);
 			window.setPixelColour(floor(line.at(i)), CV.y, colour);
 			//std::cout<<"2-8"<<std::endl;
 			window.setPixelColour(floor(line.at(i)), CV.y-1, colour);
@@ -503,6 +484,10 @@ void modifyCameraRotation (glm::vec3 &initalCamera,glm::mat3 toRotate){
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void modifyVectorRotation (glm::mat3 &rotation, glm::mat3 newRotation){
+	rotation = rotation + newRotation;
+}
+
 
 void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
 	//std::cout << "9"<< std::endl;
@@ -514,7 +499,7 @@ void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera){
+void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation){
 	//std::cout << "10"<< std::endl;
 
 	float focal = 2.5;
@@ -526,12 +511,6 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 	float planeMulti = 500;
 
 	std::vector<CanvasTriangle> out;
-
-
-
-
-
-
 
 	float x;
 
@@ -551,6 +530,7 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 			//std::cout<<"3-8"<<std::endl;
 			glm::vec3 v = mt.vertices[i];
+			v = v * rotation;
 
 					//calculate u
 
@@ -566,10 +546,10 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 
 
-		uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
+	//	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
 		//std::cout<<"5-1"<<std::endl;
 
-		window.setPixelColour(x, y, colour);
+	//	window.setPixelColour(x, y, colour);
 
 
 		}
@@ -582,30 +562,17 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 		//std::cout<<"4-2"<<std::endl;
 		for (int y =0;y<WIDTH;y++){
 			for(int x =0;x<HEIGHT;x++){
-				//std::cout<<"y" <<std::endl;
-				//std::cout<<y <<std::endl;
-				//std::cout<<x <<std::endl;
 				depthArray[y][x] = 0;
 			}
 		}
 
+		// for(float* f:depthArray){
+		// 	f = 0;
+		// }
 
-
-		//std::cout<<"4-3"<<std::endl;
-		drawFilledTriangle(window, temp, mt.colour,depthArray);
-
-		//std::cout<<mt.colour<<std::endl;
-
-
+		drawFilledTriangle(window, temp, mt.colour, depthArray);
 
 	}
-
-	//std::cout<<"3-6"<<std::endl;
-
-	//return out;
-
-
-
 }
 
 
@@ -686,7 +653,7 @@ void update(DrawingWindow &window) {
 
 
 
-void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera ) {
+void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 &rotation ) {
 	//std::cout << "14"<< std::endl;
 	if (event.type == SDL_KEYDOWN) {
 
@@ -704,7 +671,7 @@ void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera 
 
 		else if (event.key.keysym.sym == SDLK_a) modifyCameraPosition(initalCamera,glm::vec3(0.1, 0, 0));
 
-		else if (event.key.keysym.sym == SDLK_d) modifyCameraPosition(initalCamera,glm::vec3(-0.2, 0, 0));
+		else if (event.key.keysym.sym == SDLK_d) modifyCameraPosition(initalCamera,glm::vec3(-0.1, 0, 0));
 
 		else if (event.key.keysym.sym == SDLK_o) modifyCameraPosition(initalCamera,glm::vec3(0.0, 0.1, 0));
 
@@ -713,6 +680,19 @@ void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera 
 		else if (event.key.keysym.sym == SDLK_w) modifyCameraPosition(initalCamera,glm::vec3(0.0, 0, 0.1));
 
 		else if (event.key.keysym.sym == SDLK_s) modifyCameraPosition(initalCamera,glm::vec3(0.0, 0, -0.1));
+
+		//rotation
+		else if (event.key.keysym.sym == SDLK_z) modifyVectorRotation(rotation, glm::mat3(1, 0, 0, 0, cos(0.1), -sin(0.1), 0, sin(0.1), cos(0.1)));
+
+		else if (event.key.keysym.sym == SDLK_x) modifyVectorRotation(rotation, glm::mat3(-1, 0, 0, 0, -cos(0.1), sin(0.1), 0, -sin(0.1), -cos(0.1)));
+
+		else if (event.key.keysym.sym == SDLK_c) modifyVectorRotation(rotation, glm::mat3(cos(0.1), 0, sin(0.1), 0, 1, 0, -sin(0.1), 0, cos(0.1)));
+
+		else if (event.key.keysym.sym == SDLK_v) modifyVectorRotation(rotation, glm::mat3(-cos(0.1), 0, -sin(0.1), 0, -1, 0, sin(0.1), 0, -cos(0.1)));
+
+		else if (event.key.keysym.sym == SDLK_b) modifyVectorRotation(rotation, glm::mat3(cos(0.1), -sin(0.1), 0, sin(0.1), cos(0.1), 0, 0, 0, 1));
+
+		else if (event.key.keysym.sym == SDLK_n) modifyVectorRotation(rotation, glm::mat3(-cos(0.1), sin(0.1), 0, -sin(0.1), -cos(0.1), 0, 0, 0, -1));
 
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) window.savePPM("output.ppm");
 
@@ -738,11 +718,11 @@ int main(int argc, char *argv[]) {
 
 	std::vector<glm::vec3> result = interpolateThreeElementValues(glm::vec3 (1, 4, 9.2), glm::vec3 (4, 1, 9.8), 4);
 
-	for(size_t i=0; i<result.size(); i++) std::cout << result[i].x << " ";
-
-	for(size_t i=0; i<result.size(); i++) std::cout << result[i].y << " ";
-
-	for(size_t i=0; i<result.size(); i++) std::cout << result[i].z << " ";
+	// for(size_t i=0; i<result.size(); i++) std::cout << result[i].x << " ";
+	//
+	// for(size_t i=0; i<result.size(); i++) std::cout << result[i].y << " ";
+	//
+	// for(size_t i=0; i<result.size(); i++) std::cout << result[i].z << " ";
 
 	//std::cout << std::endl;
 
@@ -752,26 +732,22 @@ int main(int argc, char *argv[]) {
 
 	glm::vec3 initalCamera  = glm::vec3(0.0, 0.0, 3.0);
 	glm::mat3 rotation = glm::mat3(
-   0.0, 0.0, 0.0, // first column (not row!)
-   0.0, 0.1, 0.1, // second column
-   0.0, 0.1, 0.1  // third column
+   1, 0, 0, // first column (not row!)
+   0, 1, 0, // second column
+   0, 0, 1  // third column
 	);
-	//modifyCameraPosition(initalCamera,glm::vec3(0.1, 0.1, -0.1));
-	//modifyCameraRotation(initalCamera,rotation);
-	//std::cout << initalCamera.x<< std::endl;
-	//std::cout << initalCamera.y<< std::endl;
-	//std::cout << initalCamera.z<< std::endl;
+
 	while (true) {
 
 		// We MUST poll for events - otherwise the window will freeze !
 
-		if (window.pollForInputEvents(event)) handleEvent(event, window,initalCamera);
+		if (window.pollForInputEvents(event)) handleEvent(event, window,initalCamera, rotation);
 
 		update(window);
 
+		// rotation = rotation * rotation;
 
-
-		vec3ToImagePlane(modelTriangles, window ,initalCamera );
+		vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation);
 
 
 
