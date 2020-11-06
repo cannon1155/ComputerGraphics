@@ -198,11 +198,12 @@ std::vector<ModelTriangle> readOBJFile(){
 
 std::vector<float> interpolateSingleFloat(float start, float end, int steps){
 	//std::cout<<steps<<std::endl;
+	steps = abs(steps) + 1;
 	std::vector<float> list;
 	if(steps == 1){
 		list.push_back(start);
 	}else{
-		for(int i = 0; i<steps; i++){
+		for(int i = 0; i<abs(steps); i++){
 			list.push_back(start+i*((end-start)/(steps-1)));
 		}
 	}
@@ -272,7 +273,7 @@ int xyToTexture1D(int x, int y, TextureMap t){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, float depthArray[WIDTH][HEIGHT]){
+void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, float (&depthArray)[WIDTH][HEIGHT]){
 
 	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
 
@@ -299,7 +300,7 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, flo
 	int ydif02 = (int)canvasP2.y - (int)canvasP0.y;
 	//std::cout<<ydifT02<<std::endl;
 	if(canvasP1.y != canvasP2.y && canvasP0.y != canvasP1.y){
-		std::vector<float> canvas0to2 = interpolateSingleFloat(canvasP0.x, canvasP2.x, ydif02+1);
+		std::vector<float> canvas0to2 = interpolateSingleFloat(canvasP0.x, canvasP2.x, ydif02);
 		cv = CanvasPoint((int)canvas0to2.at(canvasP1.y-canvasP0.y), canvasP1.y);
 	}
 	if(canvasP1.y == canvasP0.y){
@@ -316,19 +317,19 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, flo
 	//fill top triangle if top isnt flat
 	if(canvasP0.y != canvasP1.y){
 		float ydif0to1 = abs(canvasP1.y-canvasP0.y);
-		std::vector<float> canvas0tocv = interpolateSingleFloat(canvasP0.x, cv.x, ydif0to1+1);
-		std::vector<float> canvas0to1 = interpolateSingleFloat(canvasP0.x, canvasP1.x, ydif0to1+1);
+		std::vector<float> canvas0tocv = interpolateSingleFloat(canvasP0.x, cv.x, ydif0to1 + 1);
+		std::vector<float> canvas0to1 = interpolateSingleFloat(canvasP0.x, canvasP1.x, ydif0to1 + 1);
 
-		std::vector<float> depth0tocv = interpolateSingleFloat(canvasP0.depth, cv.depth, ydif0to1+1);
-		std::vector<float> depth0to1 = interpolateSingleFloat(canvasP0.depth, canvasP1.depth, ydif0to1+1);
+		std::vector<float> depth0tocv = interpolateSingleFloat(canvasP0.depth, cv.depth, ydif0to1 + 1);
+		std::vector<float> depth0to1 = interpolateSingleFloat(canvasP0.depth, canvasP1.depth, ydif0to1 + 1);
 
 		for(int i = 0; i<ydif0to1; i++){
-			std::vector<float> depthAcross = interpolateSingleFloat(depth0tocv[i], depth0to1[i], (int)canvas0to1.at(i)-(int)canvas0tocv.at(i)+1);
+			std::vector<float> depthAcross = interpolateSingleFloat(depth0tocv[i], depth0to1[i], (int)canvas0to1.at(i)-(int)canvas0tocv.at(i) + 1);
 			for(int x = (int)canvas0tocv.at(i); x<= (int)canvas0to1.at(i); x++){
 				if (x >= HEIGHT || (int)round(canvasP0.y+i)  >= WIDTH || x < 0 || (int)round(canvasP0.y+i) < 0){}
-				//else if(1/depthAcross.at(x-(int)canvas0tocv.at(i)) > depthArray[x][(int)round(canvasP0.y+i)]){
-					//depthArray[x][(int)round(canvasP0.y+i)] = 1/depthAcross.at(x-(int)canvas0tocv.at(i));
-					else{
+				else if(1/depthAcross.at(x-(int)canvas0tocv.at(i)) >= depthArray[x][(int)round(canvasP0.y+i)]){
+					depthArray[x][(int)round(canvasP0.y+i)] = 1/depthAcross.at(x-(int)canvas0tocv.at(i));
+				//	else{
 					window.setPixelColour(x, canvasP0.y +i, colour);
 				}
 			}
@@ -338,19 +339,26 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, flo
 	//fill bottom triangle if bottom isnt flat
 	if(canvasP2.y != canvasP1.y){
 		float ydif1to2 = abs(canvasP2.y-canvasP1.y);
-		std::vector<float> canvascvto2 = interpolateSingleFloat(cv.x, canvasP2.x, ydif1to2+1);
-		std::vector<float> canvas1to2 = interpolateSingleFloat(canvasP1.x, canvasP2.x, ydif1to2+1);
+		std::vector<float> canvascvto2 = interpolateSingleFloat(cv.x, canvasP2.x, ydif1to2 + 1);
+		std::vector<float> canvas1to2 = interpolateSingleFloat(canvasP1.x, canvasP2.x, ydif1to2 + 1);
 
-		std::vector<float> depthcvto2 = interpolateSingleFloat(cv.depth, canvasP2.depth, ydif1to2+1);
-		std::vector<float> depth1to2 = interpolateSingleFloat(canvasP1.depth, canvasP2.depth, ydif1to2+1);
+		std::vector<float> depthcvto2 = interpolateSingleFloat(cv.depth, canvasP2.depth, ydif1to2 + 1);
+		std::vector<float> depth1to2 = interpolateSingleFloat(canvasP1.depth, canvasP2.depth, ydif1to2 + 1);
 
 		for(int i = 0; i<ydif1to2; i++){
-			std::vector<float> depthAcross = interpolateSingleFloat(depthcvto2[i], depth1to2[i], (int)canvas1to2.at(i)-(int)canvascvto2.at(i)+1);
+			std::vector<float> depthAcross = interpolateSingleFloat(depthcvto2[i], depth1to2[i], (int)canvas1to2.at(i)-(int)canvascvto2.at(i) + 1);
+			// for(int j = 0; j < depthAcross.size(); j++){
+			// 	std::cout << depthAcross[j] << std::endl;
+			// }
+			// std::cout << " " << std::endl;
 			for(int x = (int)canvascvto2.at(i); x<= (int)canvas1to2.at(i); x++){
+			//	std::cout << 1/depthAcross.at(x-(int)canvascvto2.at(i)) << " " << depthArray[x][(int)round(canvasP1.y+i)] << std::endl;
+			//	std::cout << c << std::endl;
+			//	std::cout << " " << std::endl;
 				if (x >= HEIGHT || (int)round(canvasP1.y+i)  >= WIDTH || x < 0 || (int)round(canvasP1.y+i) < 0){}
-				//else if(1/depthAcross.at(x-(int)canvascvto2.at(i)) > depthArray[x][(int)round(canvasP1.y+i)]){
-					//depthArray[x][(int)round(canvasP1.y+i)] = 1/depthAcross.at(x-(int)canvascvto2.at(i));
-					else{
+				else if(1/depthAcross.at(x-(int)canvascvto2.at(i)) >= depthArray[x][(int)round(canvasP1.y+i)]){
+					depthArray[x][(int)round(canvasP1.y+i)] = 1/depthAcross.at(x-(int)canvascvto2.at(i));
+				//	else{
 					//std::cout<<depthArray[x][(int)round(canvasP1.y+i)]<<std::endl;
 					window.setPixelColour(x, canvasP1.y +i, colour);
 				}
@@ -361,203 +369,6 @@ void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c, flo
 
 }
 
-// void drawFilledTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c,float (&depthArray)[WIDTH][HEIGHT]){
-// 	//std::cout << "6"<< std::endl;
-//
-// 	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
-//
-// 	CanvasPoint canvasP0 = tri.v0();
-// 	CanvasPoint canvasP1 = tri.v1();
-// 	CanvasPoint canvasP2 = tri.v2();
-// 	CanvasPoint cv;
-//
-// 	//swap points so in increasing y order
-// 	if(canvasP1.y<canvasP0.y){
-//  		std::swap(canvasP0, canvasP1);
-// 	}
-// 	if(canvasP2.y<canvasP1.y){
-//  		std::swap(canvasP2, canvasP1);
-// 	}
-// 	if(canvasP1.y<canvasP0.y){
-//  		std::swap(canvasP0, canvasP1);
-// 	}
-//   std::cout << "1"<< std::endl;
-//
-// 	//calculate new points canvas and texture if two points arent on same y
-// 		//canvas
-// 	int ydif02 = (int)canvasP2.y - (int)canvasP0.y;
-//
-// 	if(canvasP1.y != canvasP2.y && canvasP0.y != canvasP1.y){
-//
-// 		std::vector<float> canvas0to2 = interpolateSingleFloat(canvasP0.x, canvasP2.x, ydif02);
-// 		cv = CanvasPoint((int)canvas0to2.at(canvasP1.y-canvasP0.y), canvasP1.y);
-// 	}
-// 	if(canvasP1.y == canvasP0.y){
-// 		cv = canvasP0;
-// 	}
-// 	if(canvasP1.y == canvasP2.y){
-// 		cv = canvasP2;
-// 	}
-// 	std::cout << "1.5"<< std::endl;
-//
-// 	std::vector<float> ds = interpolateSingleFloat(canvasP0.depth, canvasP2.depth, int(canvasP2.y-canvasP0.y)+1);
-// 	cv.depth = ds.at(floor(canvasP1.y-canvasP0.y));
-//
-// 	if(cv.x>canvasP1.x){
-// 		std::swap(canvasP1, cv);
-// 	}
-//
-// 	std::cout << "2"<< std::endl;
-//
-// 	/*//Getting new point
-//
-// 	std::vector<float> xs = interpolateSingleFloat(tri.v0().x, tri.v2().x, int(tri.v2().y-tri.v0().y)+1);
-// 	std::vector<float> ds = interpolateSingleFloat(tri.v0().depth, tri.v2().depth, int(tri.v2().y-tri.v0().y)+1);
-// 	//std::cout<<"here2"<<std::endl;
-// 	CanvasPoint CV = CanvasPoint(xs.at(floor(tri.v1().y-tri.v0().y)), tri.v1().y, ds.at(floor(tri.v1().y-tri.v0().y)));
-// 	//xs.at(tri.v1().y-tri.v0().y)
-// 	//std::cout<<"here3"<<std::endl;*/
-//
-// 	//fill top triangle if top isnt flat
-// 	if(canvasP0.y != canvasP1.y){
-// 		int ydif0to1 = abs(canvasP1.y-canvasP0.y);
-// 		std::vector<float> canvas0tocv = interpolateSingleFloat(canvasP0.x, cv.x, ydif0to1);
-// 		std::vector<float> canvasD0tocv = interpolateSingleFloat(canvasP0.depth, cv.depth, ydif0to1);
-// 		std::vector<float> canvas0to1 = interpolateSingleFloat(canvasP0.x, canvasP1.x, ydif0to1);
-// 		std::vector<float> canvasD0to1 = interpolateSingleFloat(canvasP0.depth, canvasP1.depth, ydif0to1);
-//
-// 		for(int i = 0; i<ydif0to1; i++){
-//
-//
-// 			std::vector<float> LineD = interpolateSingleFloat((int)canvasD0tocv.at(i), (int)canvasD0to1.at(i), (int)abs(canvas0to1.at(i)-(int)canvas0tocv.at(i))+1);
-//
-// 			for(int x = (int)canvas0tocv.at(i); x<= (int)canvas0to1.at(i); x++){
-// 				if (x >= HEIGHT || (int)round(canvasP0.y+i)  >= WIDTH || x < 0 || (int)round(canvasP0.y+i) < 0){}
-// 				else if(1/LineD.at(x-(int)canvas0tocv.at(i)) > depthArray[x][(int)round(canvasP0.y+i)]){
-// 					depthArray[x][(int)round(canvasP0.y+i)] = 1/LineD.at(x-(int)canvas0tocv.at(i));
-// 					window.setPixelColour(x, canvasP0.y +i, colour);
-//
-// 				}
-// 			}
-// 		}
-// 	}
-// 	std::cout << "3"<< std::endl;
-// /*
-// 	//Fill top triangle
-// 	int yDif = int(CV.y-tri.v0().y);
-// 	std::vector<float> xs0CV = interpolateSingleFloat(tri.v0().x, CV.x, yDif);
-// 	std::vector<float> xs0CVDs = interpolateSingleFloat(tri.v0().depth, CV.depth, yDif);
-// 	std::vector<float> xs01 = interpolateSingleFloat(tri.v0().x, tri.v1().x, yDif);
-// 	std::vector<float> xs01Ds = interpolateSingleFloat(tri.v0().depth, tri.v1().depth, yDif);
-// 	for(int y = 0; y<yDif; y++){
-// 		if(xs0CV.at(y)>xs01.at(y)){
-// 			std::swap(xs0CV, xs01);
-// 		}
-//
-// 		std::vector<float> across = interpolateSingleFloat(xs0CV.at(y), xs01.at(y), abs(xs01.at(y)-xs0CV.at(y))+2);
-// 		std::vector<float> acrossDs = interpolateSingleFloat(xs0CVDs.at(y), xs01Ds.at(y), abs(xs01.at(y)-xs0CV.at(y))+2);
-//
-// 		for(int i = 0; i<across.size();i++){
-//
-// 			if ((int)across.at(i) >= HEIGHT || (int)round(tri.v0().y+y)  >= WIDTH || (int)across.at(i) < 0 || (int)round(tri.v0().y+y) < 0){}
-// 			else if(1/acrossDs.at(i) > depthArray[(int)across.at(i)][(int)round(tri.v0().y+y)]){
-// 				//std::cout<<"17"<<std::endl;
-// 				depthArray[(int)across.at(i)][(int)round(tri.v0().y+y)] = 1/acrossDs.at(i);
-// 				//std::cout<<"18"<<std::endl;
-// 				window.setPixelColour(floor(across.at(i)), round(tri.v0().y+y), colour);
-//
-// 			}
-// 		}
-// 	}*/
-//
-// /*
-// 	std::vector<float> line = interpolateSingleFloat(CV.x, tri.v1().x, abs(tri.v1().x-CV.x)+2);
-//
-// 	std::vector<float> lineDs = interpolateSingleFloat(CV.depth, tri.v1().depth, abs(tri.v1().x-CV.x)+2);
-// //std::cout<<"2-4"<<std::endl;
-// 	for(int i = 0; i<line.size();i++){
-// 		if ((int)line.at(i) >= WIDTH || ((int)round(tri.v1().y) >=  HEIGHT || (int)line.at(i) < 0 || (int)round(tri.v1().y) < 0)){
-//
-// 		}
-// 		else if(1/lineDs.at(i) > depthArray[(int)line.at(i)][(int)round(tri.v1().y)]){
-// 			//std::cout<<"2-7"<<std::endl;
-// 		//	depthArray[(int)line.at(i)][(int)round(tri.v1().y)] = 1/lineDs.at(i);
-// 			window.setPixelColour(floor(line.at(i)), CV.y, colour);
-// 			//std::cout<<"2-8"<<std::endl;
-// 			window.setPixelColour(floor(line.at(i)), CV.y-1, colour);
-//
-// 		}
-//
-// 	}*/
-//
-// 	//fill bottom triangle if bottom isnt flat
-// 	if(canvasP2.y != canvasP1.y){
-// 		int ydif1to2 = (int)abs(canvasP2.y-canvasP1.y);
-//
-// 		std::vector<float> canvascvto2 = interpolateSingleFloat(cv.x, canvasP2.x, ydif1to2);
-// 		std::vector<float> canvasDcvto2 = interpolateSingleFloat(cv.depth, canvasP2.depth, ydif1to2);
-// 		std::vector<float> canvas1to2 = interpolateSingleFloat(canvasP1.x, canvasP2.x, ydif1to2);
-// 		std::vector<float> canvasD1to2 = interpolateSingleFloat(canvasP1.depth, canvasP2.depth, ydif1to2);
-//
-//
-//
-// 		for(int i = 0; i<ydif1to2; i++){
-//
-// 			//std::vector<float> Line = interpolateSingleFloat((int)canvascvto2.at(i), (int)canvas1to2.at(i), (int)abs(canvas1to2.at(i)-(int)canvascvto2.at(i))+1);
-// 			std::cout << "3.5"<< std::endl;
-// 			std::cout << ydif1to2<< std::endl;
-// 			std::vector<float> LineD = interpolateSingleFloat((int)canvasDcvto2.at(i), (int)canvasD1to2.at(i), (int)abs(canvas1to2.at(i)-(int)canvascvto2.at(i))+1);
-// 			std::cout << (int)round(canvasP1.y+i)<< std::endl;
-//
-//
-// 			for(int x = (int)canvascvto2.at(i); x<= (int)canvas1to2.at(i); x++){
-// 				//std::cout << LineD.at(x-(int)canvascvto2.at(i))<< std::endl;
-// 				std::cout << "3.6"<< std::endl;
-// 				if (x >= HEIGHT || ( (int)round(canvasP1.y+i) >=  WIDTH || x < 0 || (int)round(canvasP1.y+i) < 0) ){
-// 					//std::cout<<"3-2"<<std::endl;
-// 				}
-// 				else if(1/LineD.at(x-(int)canvascvto2.at(i)) > depthArray[x][(int)round(canvasP1.y+i)]){
-// 					std::cout << "3.7"<< std::endl;
-// 					depthArray[x][(int)round(canvasP1.y+i)] = 1/LineD.at(x-(int)canvascvto2.at(i));
-// 					window.setPixelColour(x, canvasP1.y +i, colour);
-// 					std::cout << "3.8"<< std::endl;
-//
-// 				}
-//
-// 			}
-// 		}
-// 	}
-// 	std::cout << "4"<< std::endl;
-//
-// /*
-// 	//fill bottom triangle
-//
-// 	int yDif2 = int(tri.v2().y-CV.y)+1;
-//
-// 	std::vector<float> xsCV2 = interpolateSingleFloat(CV.x,tri.v2().x, yDif2);
-// 	std::vector<float> xsCV2Ds = interpolateSingleFloat(CV.depth,tri.v2().depth, yDif2);
-// 	std::vector<float> xs12 = interpolateSingleFloat(tri.v1().x, tri.v2().x, yDif2);
-// 	std::vector<float> xs12Ds = interpolateSingleFloat(tri.v1().depth, tri.v2().depth, yDif2);
-// 	for(int y = 0; y<yDif2; y++){
-// 		//std::cout<<"3-3"<<std::endl;
-// 		if(xsCV2.at(y)>xs12.at(y)){
-// 			std::swap(xsCV2, xs12);
-// 		}
-// 		std::vector<float> across = interpolateSingleFloat(xsCV2.at(y), xs12.at(y), abs(xs12.at(y)-xsCV2.at(y))+2);
-// 		std::vector<float> acrossDs = interpolateSingleFloat(xsCV2Ds.at(y), xs12Ds.at(y), abs(xs12.at(y)-xsCV2.at(y))+2);
-// 		for(int i = 0; i<across.size();i++){
-//
-// 			if ((int)across.at(i) >= HEIGHT || ( (int) round(tri.v1().y+y) >=  WIDTH || (int)across.at(i) < 0 || (int)round(tri.v1().y+y) < 0) ){
-// 				//std::cout<<"3-2"<<std::endl;
-// 			}
-// 			else if(1/acrossDs.at(i) > depthArray[(int)across.at(i)][(int)round(tri.v1().y+y)]){
-// 				depthArray[(int)across.at(i)][(int)round(tri.v1().y+y)] = 1/acrossDs.at(i);
-// 				window.setPixelColour((int) floor(across.at(i)), round(CV.y+y), colour);
-// 			}
-// 		}
-// 	}*/
-//
-// }
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -613,7 +424,7 @@ void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation){
+void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation, float (&depthArray)[WIDTH][HEIGHT]){
 	//std::cout << "10"<< std::endl;
 
 	float focal = 2.5;
@@ -649,23 +460,6 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 
 		temp[i] = cp;
 
-	//	uint32_t colour = (255 << 24) + (int(c.red) << 16) + (int(c.green) << 8) + int(c.blue);
-		//std::cout<<"5-1"<<std::endl;
-
-	//	window.setPixelColour(x, y, colour);
-		}
-
-		//std::cout<<"4-0"<<std::endl;
-
-		//out.push_back(temp);
-
-		//std::cout<<"4-1"<<std::endl;
-		float depthArray[WIDTH][HEIGHT];
-		//std::cout<<"4-2"<<std::endl;
-		for (int y =0;y<WIDTH;y++){
-			for(int x =0;x<HEIGHT;x++){
-				depthArray[y][x] = 0;
-			}
 		}
 
 		// for(float* f:depthArray){
@@ -957,9 +751,17 @@ int main(int argc, char *argv[]) {
 
 		update(window);
 
+		float depthArray[WIDTH][HEIGHT];
+		//std::cout<<"4-2"<<std::endl;
+		for (int y =0;y<WIDTH;y++){
+			for(int x =0;x<HEIGHT;x++){
+				depthArray[y][x] = 0;
+			}
+		}
+
 		// rotation = rotation * rotation;
 
-		vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation);
+		vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
 
 
 
