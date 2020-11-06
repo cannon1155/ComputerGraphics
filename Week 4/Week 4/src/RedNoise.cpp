@@ -265,9 +265,13 @@ void drawStrokedTriangle(DrawingWindow &window, CanvasTriangle tri, Colour c){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int xyToTexture1D(int x, int y, TextureMap t){
+uint32_t xyToTexture1D(int x, int y, TextureMap t){
 	//std::cout << "5"<< std::endl;
-	return y*t.width +x;
+	int pixnum = y*t.width + x;
+	while (pixnum>t.width*t.height){
+		pixnum = pixnum - t.width * t.height;
+	}
+	return t.pixels[pixnum];
 
 }
 
@@ -422,6 +426,155 @@ void modifyCameraPosition(glm::vec3 &initalCamera,glm::vec3 toAdd){
 }
 
 
+void drawTexturedTriangle(DrawingWindow &window, CanvasTriangle tri){
+
+	TextureMap texture = TextureMap("texture.ppm");
+
+	tri.v0().texturePoint = {195, 5};
+	tri.v1().texturePoint = {395, 380};
+	tri.v2().texturePoint = {65, 330};
+
+	TexturePoint textureP0 = tri.v0().texturePoint;
+	TexturePoint textureP1 = tri.v1().texturePoint;
+	TexturePoint textureP2 = tri.v2().texturePoint;
+	TexturePoint tv;
+
+	CanvasPoint canvasP0 = tri.v0();
+	CanvasPoint canvasP1 = tri.v1();
+	CanvasPoint canvasP2 = tri.v2();
+	CanvasPoint cv;
+	std::cout << "11"<< std::endl;
+	//swap points so in increasing y order
+	if(canvasP1.y<canvasP0.y){
+ 		std::swap(canvasP0, canvasP1);
+
+	}
+	if(canvasP2.y<canvasP1.y){
+ 		std::swap(canvasP2, canvasP1);
+
+	}
+	if(canvasP1.y<canvasP0.y){
+ 		std::swap(canvasP0, canvasP1);
+
+	}
+
+
+
+	if(textureP1.y<textureP0.y){
+
+		std::swap(textureP0, textureP1);
+	}
+	if(textureP2.y<textureP1.y){
+
+		std::swap(textureP2, textureP1);
+	}
+	if(textureP1.y<textureP0.y){
+
+		std::swap(textureP0, textureP1);
+	}
+	std::cout << "12"<< std::endl;
+	//calculate new points canvas and texture if two points arent on same y
+		//canvas
+	int ydif02 = (int)canvasP2.y - (int)canvasP0.y;
+	int ydifT02 = (int)textureP2.y - (int)textureP0.y;
+	//std::cout<<ydifT02<<std::endl;
+	if(canvasP1.y != canvasP2.y && canvasP0.y != canvasP1.y){
+
+		std::vector<float> canvas0to2 = interpolateSingleFloat(canvasP0.x, canvasP2.x, ydif02);
+		cv = CanvasPoint((int)canvas0to2.at(canvasP1.y-canvasP0.y), canvasP1.y);
+	}
+	if(canvasP1.y == canvasP0.y){
+		cv = canvasP0;
+	}
+	if(canvasP1.y == canvasP2.y){
+		cv = canvasP2;
+	}
+	if(cv.x>canvasP1.x){
+		std::swap(canvasP1, cv);
+	}
+		//texture
+	std::cout << "13"<< std::endl;
+
+
+	if(textureP1.y != textureP2.y && textureP0.y != textureP1.y){
+		std::cout << ydifT02<< std::endl;
+		std::cout <<(canvasP1.y/ydif02)*ydifT02 << std::endl;
+		std::cout <<canvasP1.y - canvasP0.y << std::endl;
+		std::cout <<(canvasP1.y - canvasP0.y)/ydif02 << std::endl;
+		std::cout <<((canvasP1.y - canvasP0.y)/ydif02)*ydifT02 << std::endl;
+		std::cout <<(canvasP1.y/ydif02)*ydifT02 << std::endl;
+		std::cout <<(canvasP1.y/ydif02)*ydifT02 << std::endl;
+		std::vector<float> texture0to2 = interpolateSingleFloat(textureP0.x, textureP2.x, ydifT02);
+		tv = TexturePoint((int)texture0to2.at( ((canvasP1.y - canvasP0.y)/ydif02)*ydifT02), textureP0.y+((canvasP1.y - canvasP0.y)/ydif02)*ydifT02);
+		//tv = TexturePoint(200, 330);
+	}
+	if(textureP1.y == textureP0.y){
+		std::cout << "15"<< std::endl;
+		tv = textureP0;
+	}
+	if(textureP1.y == textureP2.y){
+		std::cout << "16"<< std::endl;
+		tv = textureP2;
+	}
+	if(tv.x>textureP1.x){
+		std::cout << "17"<< std::endl;
+		std::swap(textureP1, tv);
+	}
+
+	std::cout << "14"<< std::endl;
+	//fill top triangle if top isnt flat
+	if(canvasP0.y != canvasP1.y){
+		float ydif0to1 = abs(canvasP1.y-canvasP0.y);
+		float ydifT0to1 = abs(textureP1.y-textureP0.y);
+		std::vector<float> canvas0tocv = interpolateSingleFloat(canvasP0.x, cv.x, ydif0to1);
+		std::vector<float> texture0totv = interpolateSingleFloat(textureP0.x, tv.x, ydif0to1);
+		std::vector<float> canvas0to1 = interpolateSingleFloat(canvasP0.x, canvasP1.x, ydif0to1);
+		std::vector<float> texture0to1 = interpolateSingleFloat(textureP0.x, textureP1.x, ydif0to1);
+
+		for(int i = 0; i<ydif0to1; i++){
+			if(i == ydif0to1-1){
+				std::cout<<(int)(textureP0.y+i*((textureP1.y-textureP0.y)/ydif0to1))<<std::endl;
+			}
+
+			std::vector<float> textureLine = interpolateSingleFloat((int)texture0totv.at(i), (int)texture0to1.at(i), (int)abs(canvas0to1.at(i)-(int)canvas0tocv.at(i))+1);
+			for(int x = (int)canvas0tocv.at(i); x<= (int)canvas0to1.at(i); x++){
+
+				window.setPixelColour(x, canvasP0.y +i, xyToTexture1D((int)textureLine.at(x-(int)canvas0tocv.at(i)), (int)(textureP0.y+i*((textureP1.y-textureP0.y)/ydif0to1)), texture));
+
+			}
+		}
+	}
+	std::cout << "15"<< std::endl;
+	//fill bottom triangle if bottom isnt flat
+	if(canvasP2.y != canvasP1.y){
+		float ydif1to2 = abs(canvasP2.y-canvasP1.y);
+		float ydifT1to2 = abs(textureP2.y-textureP1.y);
+		std::vector<float> canvascvto2 = interpolateSingleFloat(cv.x, canvasP2.x, ydif1to2);
+		std::vector<float> texturetvto2 = interpolateSingleFloat(tv.x, textureP2.x, ydif1to2);
+		std::vector<float> canvas1to2 = interpolateSingleFloat(canvasP1.x, canvasP2.x, ydif1to2);
+		std::vector<float> texture1to2 = interpolateSingleFloat(textureP1.x, textureP2.x, ydif1to2);
+
+		for(int i = 0; i<ydif1to2; i++){
+			if(i == ydif1to2-1){
+				std::cout<<(int)(textureP1.y+i*((textureP2.y-textureP1.y)/ydif1to2))<<std::endl;
+			}
+			std::vector<float> textureLine = interpolateSingleFloat((int)texturetvto2.at(i), (int)texture1to2.at(i), (int)abs(canvas1to2.at(i)-(int)canvascvto2.at(i))+1);
+			for(int x = (int)canvascvto2.at(i); x<= (int)canvas1to2.at(i); x++){
+
+				window.setPixelColour(x, canvasP1.y +i, xyToTexture1D((int)textureLine.at(x-(int)canvascvto2.at(i)), (int)(textureP1.y+i*((textureP2.y-textureP1.y)/ydif1to2)), texture));
+
+			}
+		}
+	}
+	std::cout << "16"<< std::endl;
+
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation, float (&depthArray)[WIDTH][HEIGHT]){
@@ -465,133 +618,20 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 		// for(float* f:depthArray){
 		// 	f = 0;
 		// }
+		if (mt.colour.red == 0 && mt.colour.green == 255 && mt.colour.blue == 0){
+			drawTexturedTriangle(window,temp);
+		}
+		else{
+			drawFilledTriangle(window, temp, mt.colour, depthArray);
+		}
 
-		drawFilledTriangle(window, temp, mt.colour, depthArray);
 
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void drawTexturedTriangle(DrawingWindow &window, CanvasTriangle tri){
 
-	TextureMap texture = TextureMap("texture.ppm");
-
-	tri.v0().texturePoint = {195, 5};
-	tri.v1().texturePoint = {395, 380};
-	tri.v2().texturePoint = {65, 330};
-
-	TexturePoint textureP0 = tri.v0().texturePoint;
-	TexturePoint textureP1 = tri.v1().texturePoint;
-	TexturePoint textureP2 = tri.v2().texturePoint;
-	TexturePoint tv;
-
-	CanvasPoint canvasP0 = tri.v0();
-	CanvasPoint canvasP1 = tri.v1();
-	CanvasPoint canvasP2 = tri.v2();
-	CanvasPoint cv;
-
-	//swap points so in increasing y order
-	if(canvasP1.y<canvasP0.y){
- 		std::swap(canvasP0, canvasP1);
-		std::swap(textureP0, textureP1);
-	}
-	if(canvasP2.y<canvasP1.y){
- 		std::swap(canvasP2, canvasP1);
-		std::swap(textureP2, textureP1);
-	}
-	if(canvasP1.y<canvasP0.y){
- 		std::swap(canvasP0, canvasP1);
-		std::swap(textureP0, textureP1);
-	}
-
-	//calculate new points canvas and texture if two points arent on same y
-		//canvas
-	int ydif02 = (int)canvasP2.y - (int)canvasP0.y;
-	int ydifT02 = (int)textureP2.y - (int)textureP0.y;
-	//std::cout<<ydifT02<<std::endl;
-	if(canvasP1.y != canvasP2.y && canvasP0.y != canvasP1.y){
-
-		std::vector<float> canvas0to2 = interpolateSingleFloat(canvasP0.x, canvasP2.x, ydif02);
-		cv = CanvasPoint((int)canvas0to2.at(canvasP1.y-canvasP0.y), canvasP1.y);
-	}
-	if(canvasP1.y == canvasP0.y){
-		cv = canvasP0;
-	}
-	if(canvasP1.y == canvasP2.y){
-		cv = canvasP2;
-	}
-	if(cv.x>canvasP1.x){
-		std::swap(canvasP1, cv);
-	}
-		//texture
-	if(textureP1.y != textureP2.y && textureP0.y != textureP1.y){
-		//
-		std::vector<float> texture0to2 = interpolateSingleFloat(textureP0.x, textureP2.x, ydifT02);
-		tv = TexturePoint((int)texture0to2.at((canvasP1.y/ydif02)*ydifT02), textureP0.y+(canvasP1.y/ydif02)*ydifT02);
-	}
-	if(textureP1.y == textureP0.y){
-		tv = textureP0;
-	}
-	if(textureP1.y == textureP2.y){
-		tv = textureP2;
-	}
-	if(tv.x>textureP1.x){
-		std::swap(textureP1, tv);
-	}
-
-
-	//fill top triangle if top isnt flat
-	if(canvasP0.y != canvasP1.y){
-		float ydif0to1 = abs(canvasP1.y-canvasP0.y);
-		float ydifT0to1 = abs(textureP1.y-textureP0.y);
-		std::vector<float> canvas0tocv = interpolateSingleFloat(canvasP0.x, cv.x, ydif0to1);
-		std::vector<float> texture0totv = interpolateSingleFloat(textureP0.x, tv.x, ydif0to1);
-		std::vector<float> canvas0to1 = interpolateSingleFloat(canvasP0.x, canvasP1.x, ydif0to1);
-		std::vector<float> texture0to1 = interpolateSingleFloat(textureP0.x, textureP1.x, ydif0to1);
-
-		for(int i = 0; i<ydif0to1; i++){
-			if(i == ydif0to1-1){
-				std::cout<<(int)(textureP0.y+i*((textureP1.y-textureP0.y)/ydif0to1))<<std::endl;
-			}
-
-			std::vector<float> textureLine = interpolateSingleFloat((int)texture0totv.at(i), (int)texture0to1.at(i), (int)abs(canvas0to1.at(i)-(int)canvas0tocv.at(i))+1);
-			for(int x = (int)canvas0tocv.at(i); x<= (int)canvas0to1.at(i); x++){
-
-				window.setPixelColour(x, canvasP0.y +i, xyToTexture1D((int)textureLine.at(x-(int)canvas0tocv.at(i)), (int)(textureP0.y+i*((textureP1.y-textureP0.y)/ydif0to1)), texture));
-
-			}
-		}
-	}
-
-	//fill bottom triangle if bottom isnt flat
-	if(canvasP2.y != canvasP1.y){
-		float ydif1to2 = abs(canvasP2.y-canvasP1.y);
-		float ydifT1to2 = abs(textureP2.y-textureP1.y);
-		std::vector<float> canvascvto2 = interpolateSingleFloat(cv.x, canvasP2.x, ydif1to2);
-		std::vector<float> texturetvto2 = interpolateSingleFloat(tv.x, textureP2.x, ydif1to2);
-		std::vector<float> canvas1to2 = interpolateSingleFloat(canvasP1.x, canvasP2.x, ydif1to2);
-		std::vector<float> texture1to2 = interpolateSingleFloat(textureP1.x, textureP2.x, ydif1to2);
-
-		for(int i = 0; i<ydif1to2; i++){
-			if(i == ydif1to2-1){
-				std::cout<<(int)(textureP1.y+i*((textureP2.y-textureP1.y)/ydif1to2))<<std::endl;
-			}
-			std::vector<float> textureLine = interpolateSingleFloat((int)texturetvto2.at(i), (int)texture1to2.at(i), (int)abs(canvas1to2.at(i)-(int)canvascvto2.at(i))+1);
-			for(int x = (int)canvascvto2.at(i); x<= (int)canvas1to2.at(i); x++){
-
-				window.setPixelColour(x, canvasP1.y +i, xyToTexture1D((int)textureLine.at(x-(int)canvascvto2.at(i)), (int)(textureP1.y+i*((textureP2.y-textureP1.y)/ydif1to2)), texture));
-
-			}
-		}
-	}
-
-
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
 
 
 void draw(DrawingWindow &window) {
