@@ -973,7 +973,7 @@ int main(int argc, char *argv[]) {
 			//drawStrokedTriangle(window, ct, Colour(255,255,255));
 
 		//}
-
+		//lol the lab machines work better
 
 
 		//draw(window);
