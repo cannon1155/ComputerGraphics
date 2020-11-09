@@ -322,8 +322,13 @@ uint32_t xyToTexture1D(int x, int y, TextureMap t){
 glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
 	//z = cameraPos - 2;
 	//todo implement
+	x = (x - WIDTH/2) / (WIDTH);
+	y = (y - HEIGHT/2) / (HEIGHT);
+
 	float num = sqrt(x*x+y*y+2*2);
-	glm::vec3 vector = glm::vec3(x/num,y/num,2/num);
+
+	glm::vec3 vector = glm::vec3(x/num,-y/num,-2/num);
+
 	return vector;
 }
 
@@ -336,6 +341,7 @@ glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
 //this should return a RayTriangleIntersection which is a way to see an intercepted point on the closest triangle
 //code copied from blackboard other then printVec3
 RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 rayDirection, std::vector<ModelTriangle> triangles){
+	//printVec3(rayDirection);
 	float minDistance = 99999999999999;
 	int i = 0;
 	glm::vec3 point = glm::vec3(0,0,0);
@@ -352,10 +358,11 @@ RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 ra
 		float v = possibleSolution[2];
 
 		if (((u >= 0.0) && (u <= 1.0))  && ((v >= 0.0) && (v <= 1.0)) && ((u + v) <= 1.0) && dis >= 0){
-				print(dis);
+				//print(dis);
 			if (dis<minDistance){
 				point = cameraPos + (rayDirection * dis);
 				finalTriangle = triangle;
+
 				index = i;
 				minDistance = dis;
 			}
@@ -679,7 +686,7 @@ void drawTexturedTriangle(DrawingWindow &window, CanvasTriangle tri){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation, float (&depthArray)[WIDTH][HEIGHT]){
+void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 rotation, float (&depthArray)[WIDTH][HEIGHT],int mode){
 	//std::cout << "10"<< std::endl;
 
 	float focal = 2.5;
@@ -720,12 +727,18 @@ void vec3ToImagePlane(std::vector<ModelTriangle> vs, DrawingWindow &window,glm::
 		// for(float* f:depthArray){
 		// 	f = 0;
 		// }
-		if (mt.colour.red == 0 && mt.colour.green == 255 && mt.colour.blue == 0){
-			drawTexturedTriangle(window,temp);
+		if (mode == 1){
+			if (mt.colour.red == 0 && mt.colour.green == 255 && mt.colour.blue == 0){
+				drawTexturedTriangle(window,temp);
+			}
+			else{
+				drawFilledTriangle(window, temp, mt.colour, depthArray);
+			}
 		}
 		else{
-			drawFilledTriangle(window, temp, mt.colour, depthArray);
+			drawStrokedTriangle(window,temp,mt.colour);
 		}
+
 
 
 	}
@@ -790,14 +803,18 @@ void draw(DrawingWindow &window) {
 
 void drawRayTrace(DrawingWindow &window, glm::vec3 &initalCamera,std::vector<ModelTriangle> modelTriangles) {
 	window.clearPixels();
+	RayTriangleIntersection intersection = RayTriangleIntersection();
 	for (size_t y = 0; y < window.height; y++) {
 		for (size_t x = 0; x < window.width; x++) {
-			RayTriangleIntersection intersection =  getClosestIntersection(initalCamera,calculateDirection(initalCamera,x,y),modelTriangles);
+			intersection = RayTriangleIntersection();
+			intersection =  getClosestIntersection(initalCamera,calculateDirection(initalCamera,x,y),modelTriangles);
+
 			//are they compared by reference or value
-			if (intersection.distanceFromCamera != 0){
-				print("confirm");
-				print(intersection.distanceFromCamera);
-				Colour color =  intersection.intersectedTriangle.colour;
+			if (intersection.distanceFromCamera != RayTriangleIntersection().distanceFromCamera && intersection.triangleIndex != RayTriangleIntersection().triangleIndex){
+
+				//print("confirm");
+				//print(intersection.distanceFromCamera);
+				Colour color =  modelTriangles.at( intersection.triangleIndex).colour;
 
 				float red = color.red;
 
@@ -810,6 +827,7 @@ void drawRayTrace(DrawingWindow &window, glm::vec3 &initalCamera,std::vector<Mod
 
 				window.setPixelColour(x, y, colour );
 			}
+
 
 		}
 	}
@@ -830,7 +848,7 @@ void update(DrawingWindow &window) {
 
 
 
-void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 &rotation ) {
+void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera, glm::mat3 &rotation ,int &mode) {
 	//std::cout << "14"<< std::endl;
 	if (event.type == SDL_KEYDOWN) {
 
@@ -857,6 +875,12 @@ void handleEvent(SDL_Event event, DrawingWindow &window,glm::vec3 &initalCamera,
 		else if (event.key.keysym.sym == SDLK_w) modifyCameraPosition(initalCamera,glm::vec3(0.0, 0, 0.1));
 
 		else if (event.key.keysym.sym == SDLK_s) modifyCameraPosition(initalCamera,glm::vec3(0.0, 0, -0.1));
+
+		else if (event.key.keysym.sym == SDLK_0) mode = 0;
+
+		else if (event.key.keysym.sym == SDLK_1) mode = 1;
+
+		else if (event.key.keysym.sym == SDLK_2) mode = 2;
 
 		//rotation
 		else if (event.key.keysym.sym == SDLK_z) modifyVectorRotation(rotation, glm::mat3(1, 0, 0, 0, cos(0.1), -sin(0.1), 0, sin(0.1), cos(0.1)));
@@ -902,7 +926,7 @@ int main(int argc, char *argv[]) {
 	// for(size_t i=0; i<result.size(); i++) std::cout << result[i].z << " ";
 
 	//std::cout << std::endl;
-
+	int mode = 2;
 
 
 	std::vector<ModelTriangle> modelTriangles = readOBJFile();
@@ -915,11 +939,11 @@ int main(int argc, char *argv[]) {
 	);
 
 	while (true) {
-		print("new frame");
+		//print("new frame");
 
 		// We MUST poll for events - otherwise the window will freeze !
 
-		if (window.pollForInputEvents(event)) handleEvent(event, window,initalCamera, rotation);
+		if (window.pollForInputEvents(event)) handleEvent(event, window,initalCamera, rotation,mode);
 
 		update(window);
 
@@ -932,9 +956,14 @@ int main(int argc, char *argv[]) {
 		}
 
 		// rotation = rotation * rotation;
-		drawRayTrace(window,initalCamera,modelTriangles);
-		//vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
-		getClosestIntersection(initalCamera,glm::vec3(0.1,0,-1),modelTriangles);
+		if (mode == 2){
+			drawRayTrace(window,initalCamera,modelTriangles);
+		}
+		if (mode == 1 || mode == 0){
+			vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray,mode);
+		}
+		//
+		//getClosestIntersection(initalCamera,glm::vec3(0.1,0,-1),modelTriangles);
 
 
 		//std::vector<CanvasTriangle> tris = vec3ToImagePlane(modelTriangles, window);
