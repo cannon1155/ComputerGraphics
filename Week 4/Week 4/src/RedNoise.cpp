@@ -320,9 +320,15 @@ uint32_t xyToTexture1D(int x, int y, TextureMap t){
 //given a camera position and a x and y cordinate this should generate a vec3 direction vector
 //from the camera to the point
 glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
+	//z = cameraPos - 2;
 	//todo implement
-	return glm::vec3(0,0,0);
+	float num = sqrt(x*x+y*y+2*2);
+	glm::vec3 vector = glm::vec3(x/num,y/num,2/num);
+	return vector;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +337,7 @@ glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
 //code copied from blackboard other then printVec3
 RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 rayDirection, std::vector<ModelTriangle> triangles){
 	float minDistance = 99999999999999;
-	int i =0;
+	int i = 0;
 	glm::vec3 point = glm::vec3(0,0,0);
 	ModelTriangle finalTriangle = ModelTriangle();
 	int index = -1;
@@ -345,7 +351,7 @@ RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 ra
 		float u = possibleSolution[1];
 		float v = possibleSolution[2];
 
-		if (((u >= 0.0) && (u <= 1.0))  && ((v >= 0.0) && (v <= 1.0)) && ((u + v) <= 1.0)){
+		if (((u >= 0.0) && (u <= 1.0))  && ((v >= 0.0) && (v <= 1.0)) && ((u + v) <= 1.0) && dis >= 0){
 				print(dis);
 			if (dis<minDistance){
 				point = cameraPos + (rayDirection * dis);
@@ -358,7 +364,7 @@ RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 ra
 		i++;
 
 	}
-	
+
 	if (minDistance != 99999999999999){
 		return RayTriangleIntersection(point,minDistance,finalTriangle,index);
 	}
@@ -780,6 +786,35 @@ void draw(DrawingWindow &window) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+void drawRayTrace(DrawingWindow &window, glm::vec3 &initalCamera,std::vector<ModelTriangle> modelTriangles) {
+	window.clearPixels();
+	for (size_t y = 0; y < window.height; y++) {
+		for (size_t x = 0; x < window.width; x++) {
+			RayTriangleIntersection intersection =  getClosestIntersection(initalCamera,calculateDirection(initalCamera,x,y),modelTriangles);
+			//are they compared by reference or value
+			if (intersection.distanceFromCamera != 0){
+				print("confirm");
+				print(intersection.distanceFromCamera);
+				Colour color =  intersection.intersectedTriangle.colour;
+
+				float red = color.red;
+
+				float green = color.green;
+
+				float blue = color.blue;
+
+				uint32_t colour = (255 << 24) + (int(red) << 16) + (int(green) << 8) + int(blue);
+
+
+				window.setPixelColour(x, y, colour );
+			}
+
+		}
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -897,9 +932,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		// rotation = rotation * rotation;
-
+		drawRayTrace(window,initalCamera,modelTriangles);
 		//vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
-		getClosestIntersection(initalCamera,glm::vec3(0,0,-1),modelTriangles);
+		getClosestIntersection(initalCamera,glm::vec3(0.1,0,-1),modelTriangles);
 
 
 		//std::vector<CanvasTriangle> tris = vec3ToImagePlane(modelTriangles, window);
