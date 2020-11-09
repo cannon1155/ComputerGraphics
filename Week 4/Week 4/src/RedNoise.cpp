@@ -28,11 +28,46 @@
 
 #define HEIGHT 600
 
+////////////////////////////////////////////////////////////////////////////////
 
+//prints a string without having to write std::cout and std::endl;
+void print(std::string thing){
+	std::cout << thing << std::endl;
+}
 
+////////////////////////////////////////////////////////////////////////////////
 
+//prints an int without having to write std::cout and std::endl;
+void print(int thing){
+	std::cout << thing << std::endl;
+}
 
+////////////////////////////////////////////////////////////////////////////////
 
+//prints a float without having to write std::cout and std::endl;
+void print(float thing){
+	std::cout << thing << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+//prints a double without having to write std::cout and std::endl;
+void print(double thing){
+	std::cout << thing << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+//prints a vec3 without having to manually print each element each time
+void printVec3 (glm::vec3 vector3){
+	print("vec3");
+	print(vector3[0]);
+	print(vector3[1]);
+	print(vector3[2]);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 std::unordered_map<std::string, Colour> getcolourMap(){
 	//std::cout << "0"<< std::endl;
@@ -274,6 +309,38 @@ uint32_t xyToTexture1D(int x, int y, TextureMap t){
 	return t.pixels[pixnum];
 
 }
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+//given a camera position and a x and y cordinate this should generate a vec3 direction vector
+//from the camera to the point
+glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
+	//todo implement
+	return glm::vec3(0,0,0);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+//this should return a RayTriangleIntersection which is a way to see an intercepted point on the closest triangle
+//code copied from blackboard other then printVec3
+void getClosestIntersection(glm::vec3 cameraPos, glm::vec3 rayDirection, std::vector<ModelTriangle> triangles){
+	for (ModelTriangle triangle : triangles){
+		glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
+		glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
+		glm::vec3 SPVector = cameraPos - triangle.vertices[0];
+		glm::mat3 DEMatrix(-rayDirection, e0, e1);
+		glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
+		printVec3(possibleSolution);
+	}
+
+}
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -784,6 +851,7 @@ int main(int argc, char *argv[]) {
 	);
 
 	while (true) {
+		print("new frame");
 
 		// We MUST poll for events - otherwise the window will freeze !
 
@@ -801,8 +869,8 @@ int main(int argc, char *argv[]) {
 
 		// rotation = rotation * rotation;
 
-		vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
-
+		//vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
+		getClosestIntersection(initalCamera,glm::vec3(0,0,1),modelTriangles);
 
 
 		//std::vector<CanvasTriangle> tris = vec3ToImagePlane(modelTriangles, window);
