@@ -870,7 +870,7 @@ int main(int argc, char *argv[]) {
 		// rotation = rotation * rotation;
 
 		//vec3ToImagePlane(modelTriangles, window ,initalCamera, rotation, depthArray);
-		getClosestIntersection(initalCamera,glm::vec3(0,0,1),modelTriangles);
+		getClosestIntersection(initalCamera,glm::vec3(0,0,-1),modelTriangles);
 
 
 		//std::vector<CanvasTriangle> tris = vec3ToImagePlane(modelTriangles, window);
