@@ -16,6 +16,8 @@
 
 #include <CanvasTriangle.h>
 
+#include <RayTriangleIntersection.h>
+
 #include <TextureMap.h>
 
 #include <ModelTriangle.h>
@@ -327,14 +329,41 @@ glm::vec3 calculateDirection(glm::vec3 &cameraPos,float x, float y){
 
 //this should return a RayTriangleIntersection which is a way to see an intercepted point on the closest triangle
 //code copied from blackboard other then printVec3
-void getClosestIntersection(glm::vec3 cameraPos, glm::vec3 rayDirection, std::vector<ModelTriangle> triangles){
+RayTriangleIntersection getClosestIntersection(glm::vec3 cameraPos, glm::vec3 rayDirection, std::vector<ModelTriangle> triangles){
+	float minDistance = 99999999999999;
+	int i =0;
+	glm::vec3 point = glm::vec3(0,0,0);
+	ModelTriangle finalTriangle = ModelTriangle();
+	int index = -1;
 	for (ModelTriangle triangle : triangles){
 		glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
 		glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
 		glm::vec3 SPVector = cameraPos - triangle.vertices[0];
 		glm::mat3 DEMatrix(-rayDirection, e0, e1);
 		glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
-		printVec3(possibleSolution);
+		float dis = possibleSolution[0];
+		float u = possibleSolution[1];
+		float v = possibleSolution[2];
+
+		if (((u >= 0.0) && (u <= 1.0))  && ((v >= 0.0) && (v <= 1.0)) && ((u + v) <= 1.0)){
+				print(dis);
+			if (dis<minDistance){
+				point = cameraPos + (rayDirection * dis);
+				finalTriangle = triangle;
+				index = i;
+				minDistance = dis;
+			}
+		}
+
+		i++;
+
+	}
+	
+	if (minDistance != 99999999999999){
+		return RayTriangleIntersection(point,minDistance,finalTriangle,index);
+	}
+	else{
+		return RayTriangleIntersection();
 	}
 
 }
